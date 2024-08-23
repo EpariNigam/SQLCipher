@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DBSqlCipher</string>
+    <string name="status_s"><b>Status :</b> %s</string>
+</resources>
