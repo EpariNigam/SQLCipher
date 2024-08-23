@@ -8,8 +8,10 @@ import com.nigam.dbsqlcipher.db.dao.UserDao
 import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 
 @Database(
@@ -38,14 +40,21 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): EncryptedAppDatabase {
-            val passPhrase = SQLiteDatabase.getBytes(DBKEY)
-            val factory = SupportFactory(passPhrase)
+            System.loadLibrary("sqlcipher")
+            val passPhrase = getBytes(DBKEY)
+            val factory = SupportOpenHelperFactory(passPhrase)
 
             return Room.databaseBuilder(context, EncryptedAppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
                 .setQueryExecutor(Dispatchers.IO.asExecutor())
                 .setTransactionExecutor(Dispatchers.IO.asExecutor())
                 .build()
+        }
+
+        @Suppress("SameParameterValue")
+        private fun getBytes(data: CharArray?): ByteArray {
+            if (data == null || data.isEmpty()) return byteArrayOf()
+            return data.toString().toByteArray(StandardCharsets.UTF_8)
         }
     }
 
