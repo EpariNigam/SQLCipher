@@ -8,9 +8,7 @@ import com.nigam.dbsqlcipher.db.dao.UserDao
 import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
-import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
-import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 
 
