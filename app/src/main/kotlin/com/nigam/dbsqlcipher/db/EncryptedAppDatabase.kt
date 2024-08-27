@@ -9,7 +9,6 @@ import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
-import java.nio.charset.StandardCharsets
 
 
 @Database(
@@ -40,7 +39,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): EncryptedAppDatabase {
             System.loadLibrary("sqlcipher")
             val passPhrase = getBytes(DBKEY)
-            val factory = SupportOpenHelperFactory(passPhrase)
+            val factory = SupportOpenHelperFactory(passPhrase, null, true)
 
             return Room.databaseBuilder(context, EncryptedAppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
@@ -52,7 +51,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
         @Suppress("SameParameterValue")
         private fun getBytes(data: CharArray?): ByteArray {
             if (data == null || data.isEmpty()) return byteArrayOf()
-            return data.toString().toByteArray(StandardCharsets.UTF_8)
+            return String(data).toByteArray(Charsets.UTF_8)
         }
     }
 
