@@ -110,7 +110,7 @@ object SQLCipherUtils {
      */
     @Throws(IOException::class)
     fun encrypt(ctxt: Context, dbName: String?, passphrase: CharArray?) {
-        encrypt(ctxt, ctxt.getDatabasePath(dbName), EncryptedAppDatabase.getBytes(passphrase))
+        encrypt(ctxt, ctxt.getDatabasePath(dbName), getBytes(passphrase))
     }
 
     /**
@@ -151,7 +151,7 @@ object SQLCipherUtils {
      */
     @Throws(IOException::class)
     fun encrypt(ctxt: Context, originalFile: File, passphrase: CharArray?) {
-        encrypt(ctxt, originalFile, EncryptedAppDatabase.getBytes(passphrase))
+        encrypt(ctxt, originalFile, getBytes(passphrase))
     }
 
     /**
@@ -235,7 +235,7 @@ object SQLCipherUtils {
      */
     @Throws(IOException::class)
     fun decrypt(ctxt: Context, originalFile: File, passphrase: CharArray?) {
-        decrypt(ctxt, originalFile, EncryptedAppDatabase.getBytes(passphrase))
+        decrypt(ctxt, originalFile, getBytes(passphrase))
     }
 
     /**
@@ -307,5 +307,10 @@ object SQLCipherUtils {
         DOES_NOT_EXIST, UNENCRYPTED, ENCRYPTED
     }
 
-    private const val TAG = "SQLCiperUtils"
+    fun getBytes(data: CharArray?): ByteArray {
+        if (data == null || data.isEmpty()) return byteArrayOf()
+        return String(data).toByteArray(Charsets.UTF_8)
+    }
+
+    private const val TAG = "SQLCipherUtils"
 }

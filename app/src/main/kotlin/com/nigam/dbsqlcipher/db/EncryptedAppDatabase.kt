@@ -39,7 +39,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
 
         private fun buildDatabase(context: Context): EncryptedAppDatabase {
             System.loadLibrary("sqlcipher")
-            val passPhrase = getBytes(DBKEY)
+            val passPhrase = SQLCipherUtils.getBytes(DBKEY)
             val state = SQLCipherUtils.getDatabaseState(context, DB_NAME)
             Log.d(TAG, "buildDatabase: $state")
             if (state == SQLCipherUtils.State.UNENCRYPTED) {
@@ -52,12 +52,6 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
                 .setQueryExecutor(Dispatchers.IO.asExecutor())
                 .setTransactionExecutor(Dispatchers.IO.asExecutor())
                 .build()
-        }
-
-        @Suppress("SameParameterValue")
-        fun getBytes(data: CharArray?): ByteArray {
-            if (data == null || data.isEmpty()) return byteArrayOf()
-            return String(data).toByteArray(Charsets.UTF_8)
         }
 
         private const val TAG = "EncryptedAppDatabase"
