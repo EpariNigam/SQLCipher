@@ -12,7 +12,7 @@ room = "2.6.1"
 activity = "1.9.1"
 constraintlayout = "2.1.4"
 ksp = "2.0.10-1.0.24"
-sql-cipher = "4.5.4"
+sql-cipher = "4.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
