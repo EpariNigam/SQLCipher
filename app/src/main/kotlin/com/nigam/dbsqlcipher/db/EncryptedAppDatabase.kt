@@ -5,7 +5,9 @@ import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.nigam.dbsqlcipher.db.dao.StringDao
 import com.nigam.dbsqlcipher.db.dao.UserDao
+import com.nigam.dbsqlcipher.db.entities.StringEntity
 import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
@@ -14,7 +16,8 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
     entities = [
-        User::class
+        User::class,
+        StringEntity::class
     ],
     exportSchema = true,
     version = EncryptedAppDatabase.VERSION
@@ -59,5 +62,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
 
 
     abstract fun userDao(): UserDao
+
+    abstract fun stringDao(): StringDao
 
 }

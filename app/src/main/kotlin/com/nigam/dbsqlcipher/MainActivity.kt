@@ -2,23 +2,28 @@ package com.nigam.dbsqlcipher
 
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.nigam.dbsqlcipher.db.EncryptedAppDatabase
+import com.nigam.dbsqlcipher.db.dao.StringDao
 import com.nigam.dbsqlcipher.db.dao.UserDao
+import com.nigam.dbsqlcipher.db.entities.StringEntity
 import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import kotlin.time.measureTimedValue
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var db: EncryptedAppDatabase
     private lateinit var userDao: UserDao
+    private lateinit var stringDao: StringDao
 
     private lateinit var tvStatus: TextView
     private lateinit var tvData: TextView
@@ -36,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         tvData = findViewById(R.id.tv_data)
         db = EncryptedAppDatabase.getInstance(this)
         userDao = db.userDao()
+        stringDao = db.stringDao()
         tvData.movementMethod = ScrollingMovementMethod()
     }
 
@@ -45,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             tvStatus.text = getString(R.string.status_s, "Inserting")
             withContext(Dispatchers.IO) {
                 delay(1000)
-                for (i in 1..20) {
+                for (i in 1..10_000) {
                     userDao.insert(User(name = "User ${UUID.randomUUID()}"))
                 }
             }
@@ -72,17 +78,65 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Main) {
             view.isEnabled = false
             tvStatus.text = getString(R.string.status_s, "Fetching")
+            var timeTaken: Long
             withContext(Dispatchers.IO) {
                 delay(1000)
-                users = userDao.getAll()
+                val value = measureTimedValue {
+                    userDao.getAll()
+                }
+                Log.d(TAG, "fetchUsers: Time taken: ${value.duration.inWholeMilliseconds}ms")
+                timeTaken = value.duration.inWholeMilliseconds
+                users = value.value
             }
             tvData.text = users.toString()
-            tvStatus.text = getString(R.string.status_s, "Fetched")
+            tvStatus.text = getString(R.string.status_time_taken_s, "Fetched", timeTaken.toString())
             view.isEnabled = true
         }
     }
 
+    fun insertString(view: View) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            view.isEnabled = false
+            tvStatus.text = getString(R.string.status_s, "Inserting")
+            withContext(Dispatchers.IO) {
+                delay(1000)
+                stringDao.insert(StringEntity(KEY_DUMMY, getRandomString(1_00_000)))
+            }
+            tvStatus.text = getString(R.string.status_s, "Inserted")
+            view.isEnabled = true
+        }
+    }
+
+    fun fetchString(view: View) {
+        var data: String
+        lifecycleScope.launch(Dispatchers.Main) {
+            view.isEnabled = false
+            tvStatus.text = getString(R.string.status_s, "Fetching")
+            var timeTaken: Long
+            withContext(Dispatchers.IO) {
+                delay(1000)
+                val value = measureTimedValue {
+                    stringDao.getData(KEY_DUMMY)
+                }
+                Log.d(TAG, "fetchUsers: Time taken: ${value.duration.inWholeMilliseconds}ms")
+                timeTaken = value.duration.inWholeMilliseconds
+                data = value.value.data
+            }
+            tvData.text = data
+            tvStatus.text = getString(R.string.status_time_taken_s, "Fetched", timeTaken.toString())
+            view.isEnabled = true
+        }
+    }
+
+    fun getRandomString(length: Int): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        return (1..length)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
+
     companion object {
         private const val TAG = "MainActivity"
+        private const val KEY_DUMMY = "KEY_DUMMY"
     }
 }
