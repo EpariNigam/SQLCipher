@@ -45,7 +45,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
             if (state == SQLCipherUtils.State.UNENCRYPTED) {
                 SQLCipherUtils.encrypt(context, DB_NAME, passPhrase)
             }
-            val factory = SupportOpenHelperFactory(passPhrase, null, true)
+            val factory = SupportOpenHelperFactory(passPhrase)
 
             return Room.databaseBuilder(context, EncryptedAppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
