@@ -39,7 +39,7 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): EncryptedAppDatabase {
             System.loadLibrary("sqlcipher")
             val passPhrase = getBytes(DBKEY)
-            val factory = SupportOpenHelperFactory(passPhrase, null, true)
+            val factory = SupportOpenHelperFactory(passPhrase)
 
             return Room.databaseBuilder(context, EncryptedAppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
