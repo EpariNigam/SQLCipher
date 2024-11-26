@@ -3,7 +3,9 @@ package com.nigam.dbsqlcipher.db
 import android.content.Context
 import android.text.Editable
 import android.util.Log
+import net.zetetic.database.sqlcipher.SQLiteConnection
 import net.zetetic.database.sqlcipher.SQLiteDatabase
+import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -57,7 +59,7 @@ object SQLCipherUtils {
                 db.version
 
                 return (State.UNENCRYPTED)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 return (State.ENCRYPTED)
             } finally {
                 db?.close()
@@ -297,6 +299,101 @@ object SQLCipherUtils {
         } else {
             throw FileNotFoundException(originalFile.absolutePath + " not found")
         }
+    }
+
+    fun reduceKeyDerivationIfRequired(ctxt: Context, dbName: String?, passphrase: ByteArray?) {
+        System.loadLibrary("sqlcipher")
+        val originalFile = ctxt.getDatabasePath(dbName)
+        if (!originalFile.exists()) {
+            Log.d(TAG, "reduceKeyDerivation: DB doesn't exist, nothing to do")
+            return
+        }
+
+        try {
+            var db = SQLiteDatabase.openDatabase(
+                originalFile.absolutePath,
+                passphrase, null, SQLiteDatabase.OPEN_READWRITE, object : SQLiteDatabaseHook {
+                    override fun preKey(connection: SQLiteConnection?) {
+
+                    }
+
+                    override fun postKey(connection: SQLiteConnection?) {
+                        connection?.execute("PRAGMA kdf_iter = 64000;", null, null)
+                    }
+
+                }
+            )
+            db.rawQuery("PRAGMA kdf_iter;").use { cursor ->
+                if (cursor.moveToFirst()) {
+                    Log.d(TAG, "reduceKeyDerivation: ${cursor.getInt(0)}")
+                }
+            }
+            db.close()
+            Log.d(TAG, "reduceKeyDerivationIfRequired: Key derivation already reduced")
+            return
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+
+        var db = SQLiteDatabase.openDatabase(
+            originalFile.absolutePath,
+            passphrase, null, SQLiteDatabase.OPEN_READWRITE, null
+        )
+
+        val newFile = File.createTempFile(
+            "sqlcipherutils", "tmp",
+            ctxt.cacheDir
+        )
+
+        // Since PRAGMA doesn't support
+        db.rawExecSQL("PRAGMA key = '${passphrase?.toString(Charsets.UTF_8)}';")
+
+        val st = db.compileStatement("ATTACH DATABASE ? AS plaintext KEY ?")
+
+        st.bindString(1, newFile.absolutePath)
+        st.bindString(2, passphrase?.toString(Charsets.UTF_8) ?: "")
+        st.execute()
+
+        db.rawExecSQL("PRAGMA plaintext.kdf_iter = 64000;")
+        val cursor = db.rawQuery("SELECT sqlcipher_export('plaintext')")
+        if (cursor?.moveToFirst() == true) {
+            cursor.close()
+        }
+        db.rawExecSQL("DETACH DATABASE plaintext")
+
+        val version: Int = db.version
+
+        st.close()
+        db.close()
+
+        db = SQLiteDatabase.openDatabase(
+            newFile.absolutePath,
+            passphrase,
+            null, SQLiteDatabase.OPEN_READWRITE, object : SQLiteDatabaseHook {
+                override fun preKey(connection: SQLiteConnection?) {
+
+                }
+
+                override fun postKey(connection: SQLiteConnection?) {
+                    connection?.execute("PRAGMA kdf_iter = 64000;", null, null)
+                }
+
+            }
+        )
+        db.version = version
+
+        db.rawQuery("PRAGMA kdf_iter;").use { cursor ->
+            if (cursor.moveToFirst()) {
+                Log.d(TAG, "reduceKeyDerivation: ${cursor.getInt(0)} after reducing")
+            }
+        }
+
+        db.close()
+
+        originalFile.delete()
+        newFile.renameTo(originalFile)
+
+        db.close()
     }
 
     /**

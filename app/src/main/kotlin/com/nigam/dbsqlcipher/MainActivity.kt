@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+import kotlin.time.TimedValue
 import kotlin.time.measureTimedValue
 
 class MainActivity : AppCompatActivity() {
@@ -108,19 +109,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun fetchString(view: View) {
-        var data: String
+        var data: String?
         lifecycleScope.launch(Dispatchers.Main) {
             view.isEnabled = false
             tvStatus.text = getString(R.string.status_s, "Fetching")
             var timeTaken: Long
             withContext(Dispatchers.IO) {
                 delay(1000)
-                val value = measureTimedValue {
+                val value: TimedValue<StringEntity?> = measureTimedValue {
                     stringDao.getData(KEY_DUMMY)
                 }
                 Log.d(TAG, "fetchUsers: Time taken: ${value.duration.inWholeMilliseconds}ms")
                 timeTaken = value.duration.inWholeMilliseconds
-                data = value.value.data
+                data = value.value?.data
             }
             tvData.text = data
             tvStatus.text = getString(R.string.status_time_taken_s, "Fetched", timeTaken.toString())

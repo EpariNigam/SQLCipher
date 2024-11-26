@@ -11,6 +11,8 @@ import com.nigam.dbsqlcipher.db.entities.StringEntity
 import com.nigam.dbsqlcipher.db.entities.User
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
+import net.zetetic.database.sqlcipher.SQLiteConnection
+import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 
@@ -48,7 +50,22 @@ abstract class EncryptedAppDatabase : RoomDatabase() {
             if (state == SQLCipherUtils.State.UNENCRYPTED) {
                 SQLCipherUtils.encrypt(context, DB_NAME, passPhrase)
             }
-            val factory = SupportOpenHelperFactory(passPhrase)
+            SQLCipherUtils.reduceKeyDerivationIfRequired(
+                context,
+                DB_NAME,
+                SQLCipherUtils.getBytes(DBKEY)
+            )
+
+            val factory = SupportOpenHelperFactory(passPhrase, object : SQLiteDatabaseHook {
+                override fun preKey(connection: SQLiteConnection?) {
+
+                }
+
+                override fun postKey(connection: SQLiteConnection?) {
+                    connection?.execute("PRAGMA kdf_iter = 64000;", null, null)
+                }
+
+            }, false)
 
             return Room.databaseBuilder(context, EncryptedAppDatabase::class.java, DB_NAME)
                 .openHelperFactory(factory)
